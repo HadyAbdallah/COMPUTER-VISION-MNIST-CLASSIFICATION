@@ -3,7 +3,9 @@ import numpy as np
 from matplotlib import pyplot as plt
 from sklearn.model_selection import train_test_split
 from skimage.transform import resize
-
+from sklearn.neighbors import KNeighborsClassifier
+from sklearn.model_selection import GridSearchCV
+from sklearn.metrics import accuracy_score, classification_report
 
 #Load the "mnist_train.csv" dataset.
 data = pd.read_csv("mnist_train.csv")
@@ -49,3 +51,50 @@ for i in range(4):
 plt.show()
 
 x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=0.2, random_state=100)
+
+# Create a k-NN classifier
+knn = KNeighborsClassifier()
+
+
+# define the parameter values that should be searched
+k_range = list(range(1, 20, 2))  # Odd values from 1 to 30
+weight_options = ['uniform', 'distance']
+# create a parameter grid: map the parameter names to the values that should be searched
+param_grid = dict(n_neighbors=k_range, weights=weight_options)
+print(param_grid)
+
+
+
+# instantiate the grid
+grid_search = GridSearchCV(knn, param_grid, cv=3, scoring='accuracy', n_jobs=-1)
+
+
+
+grid_search.fit(x_train, y_train)
+
+
+
+# view the results
+pd.DataFrame(grid_search.cv_results_)[['mean_test_score', 'std_test_score', 'params']]
+
+
+
+best_params = grid_search.best_params_
+print("Best Hyperparameters:", best_params)
+
+
+
+best_knn = KNeighborsClassifier(**best_params)
+best_knn.fit(x_train, y_train)
+
+
+
+y_pred = best_knn.predict(x_test)
+
+
+accuracy = accuracy_score(y_test, y_pred)
+print("Accuracy:", accuracy)
+
+
+report = classification_report(y_test, y_pred)
+print("Classification Report:\n", report)
