@@ -98,3 +98,64 @@ print("Accuracy:", accuracy)
 
 report = classification_report(y_test, y_pred)
 print("Classification Report:\n", report)
+
+
+##########################################
+#Traning a Neural network
+from sklearn.neural_network import MLPClassifier
+
+# Define the first ANN architecture
+ann1 = MLPClassifier(
+    hidden_layer_sizes=(100,),
+    max_iter=500,
+    random_state=100
+)
+
+# Train the first ANN
+ann1.fit(x_train, y_train)
+
+# Evaluate the first ANN on the validation set
+y_pred_ann1 = ann1.predict(x_test)
+
+accuracy_ann1 = accuracy_score(y_test, y_pred_ann1)
+print("Accuracy (ANN1):", (accuracy_ann1*100), "%")
+
+# Define the second ANN architecture with different hyperparameters
+ann2 = MLPClassifier(
+    hidden_layer_sizes=(50,),    # Single hidden layer with 50 neurons
+    learning_rate_init=0.01,      # Initial learning rate
+    batch_size=128,               # Batch size
+    max_iter=500,                 # Maximum number of iterations
+    random_state=100
+)
+
+# Train the second ANN
+ann2.fit(x_train, y_train)
+
+# Evaluate the second ANN on the validation set
+y_pred_ann2 = ann2.predict(x_test)
+
+accuracy_ann2 = accuracy_score(y_test, y_pred_ann2)
+print("Accuracy (ANN2):", (accuracy_ann2*100), "%")
+
+# Choose the best model based on validation accuracy
+best_ann = ann1 if accuracy_ann1 >= accuracy_ann2 else ann2
+print("Best ANN architecture:", "ANN1" if accuracy_ann1 >= accuracy_ann2 else "ANN2")
+
+from sklearn.metrics import confusion_matrix
+
+# Print a report for the best ANN on the testing data
+report_test = classification_report(y_test, best_ann.predict(x_test))
+print("Classification Report (Testing Data):\n", report_test)
+
+
+# Plot the performance comparison as a horizontal bar plot with a smaller y-axis scale
+labels = ['ANN1', 'ANN2']
+accuracies = [accuracy_ann1, accuracy_ann2]
+
+plt.figure(figsize=(8, 3))  # Smaller height for the plot
+plt.barh(labels, accuracies, color=['blue', 'orange'])
+plt.xlabel('Accuracy')
+plt.title('Performance Comparison between ANN1 and ANN2')
+plt.xlim(0.94, 0.99)  # Adjusted x-axis limit to focus on differences
+plt.show()
