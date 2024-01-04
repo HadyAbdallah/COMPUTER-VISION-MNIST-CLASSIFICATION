@@ -6,23 +6,29 @@ from skimage.transform import resize
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.model_selection import GridSearchCV
 from sklearn.metrics import accuracy_score, classification_report
+from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay
 
-#Load the "mnist_train.csv" dataset.
+
+#Load the "mnist_train.csv" dataset and perform initial data exploration..
 data = pd.read_csv("mnist_train.csv")
 
 print(data)
+print('----------------------')
 print(data.dtypes)
+print('----------------------')
 print("data set shape:", data.shape)
 print('----------------------')
 
+#Separate the features and target
 x = data.drop(columns=['label'])
 y = data['label']
 
-
+#Identify the number of unique classes.
 num_classes = y.nunique()
 print("Number of unique classes:",num_classes)
 print('----------------------')
 
+#Identify the number of features.
 num_features = len(x.columns)
 print("Number of features (pixels):", num_features)
 print('----------------------')
@@ -37,6 +43,10 @@ print('----------------------')
 x=x/255
 
 
+'''
+Resize images to dimensions of 28 by 28.
+After resizing, visualize some images to verify the correctness of the reshaping process.
+'''
 resized_image=[]
 for i in range(len(x)):
     img = np.array(x.loc[i]).reshape(28, 28)
@@ -57,7 +67,7 @@ knn = KNeighborsClassifier()
 
 
 # define the parameter values that should be searched
-k_range = list(range(1, 20, 2))  # Odd values from 1 to 30
+k_range = list(range(1, 20, 2))  # Odd values from 1 to 20
 weight_options = ['uniform', 'distance']
 # create a parameter grid: map the parameter names to the values that should be searched
 param_grid = dict(n_neighbors=k_range, weights=weight_options)
@@ -92,9 +102,8 @@ best_knn.fit(x_train, y_train)
 y_pred = best_knn.predict(x_test)
 
 
-accuracy = accuracy_score(y_test, y_pred)
-print("Accuracy:", accuracy)
-
+best_knn_accuracy = accuracy_score(y_test, y_pred)
+print("Accuracy:", (best_knn_accuracy*100), "%")
 
 report = classification_report(y_test, y_pred)
 print("Classification Report:\n", report)
@@ -139,14 +148,9 @@ accuracy_ann2 = accuracy_score(y_test, y_pred_ann2)
 print("Accuracy (ANN2):", (accuracy_ann2*100), "%")
 
 # Choose the best model based on validation accuracy
-best_ann = ann1 if accuracy_ann1 >= accuracy_ann2 else ann2
+best_ann,best_ann_accuracy = (ann1,accuracy_ann1) if accuracy_ann1 >= accuracy_ann2 else (ann2,accuracy_ann2)
+
 print("Best ANN architecture:", "ANN1" if accuracy_ann1 >= accuracy_ann2 else "ANN2")
-
-from sklearn.metrics import confusion_matrix
-
-# Print a report for the best ANN on the testing data
-report_test = classification_report(y_test, best_ann.predict(x_test))
-print("Classification Report (Testing Data):\n", report_test)
 
 
 # Plot the performance comparison as a horizontal bar plot with a smaller y-axis scale
@@ -159,3 +163,18 @@ plt.xlabel('Accuracy')
 plt.title('Performance Comparison between ANN1 and ANN2')
 plt.xlim(0.94, 0.99)  # Adjusted x-axis limit to focus on differences
 plt.show()
+
+# Choose the best model based on validation accuracy
+best_model,best_accuracy = (best_ann,best_ann_accuracy) if best_ann_accuracy >= best_knn_accuracy else (best_knn,best_knn_accuracy)
+print("Best Mode architecture:", "ANN" if best_ann_accuracy >= best_knn_accuracy else "K-NN")
+
+#Confusion matrix of the best model
+predictions = best_model.predict(x_test)
+confusion = confusion_matrix(y_test, predictions)
+ConfusionMatrixDisplay(confusion, display_labels=[str(i) for i in range(10)]).plot(cmap='viridis')
+
+#Save the best model
+import pickle
+
+with open('saved_model.pkl', 'wb') as file:
+    pickle.dump(best_model, file)
